@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nationcloudPOS</title>
+<link rel="icon" type="image/png" href="/logo.png">
+<link rel="shortcut icon" href="/logo.ico">
+<style>
+  :root {
+    --bg:#f2f4f8; --card:#fff; --ink:#172033; --mut:#667085; --line:#e2e6ee; --line2:#cfd5e0;
+    --pri:#2563eb; --pri-d:#1d4ed8; --ok:#15803d; --bad:#c62828; --warn:#b45309;
+    --hdr:#0f1b33; --acc:#5aa2ff; --sel:#eaf2ff;
+  }
+  * { box-sizing:border-box; }
+  html { -webkit-text-size-adjust:100%; }
+  body { margin:0; font:15px/1.45 system-ui,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--ink); }
+  button, input, select { font:inherit; color:inherit; }
+
+  header { background:var(--hdr); color:#fff; display:flex; align-items:center; gap:6px; padding:0 16px; height:54px; position:sticky; top:0; z-index:10; }
+  .brand { display:flex; align-items:center; gap:9px; margin-right:18px; font-size:18px; letter-spacing:.2px; white-space:nowrap; }
+  .brand svg { width:26px; height:26px; flex:none; }
+  .brand b { color:var(--acc); font-weight:700; }
+  nav { display:flex; align-items:stretch; height:100%; overflow-x:auto; }
+  nav button { background:none; border:0; color:#b9c3da; padding:0 15px; font-size:15px; cursor:pointer; border-bottom:3px solid transparent; white-space:nowrap; }
+  nav button:hover { color:#fff; }
+  nav button.on { color:#fff; border-bottom-color:var(--acc); }
+  .updbadge { margin-left:auto; background:#1f9d55; color:#fff; border:0; border-radius:999px; padding:5px 12px; font-size:13px; cursor:pointer; white-space:nowrap; }
+  .updbadge:hover { background:#188a49; }
+  .updbadge:not([hidden]) + .toko { margin-left:12px; }
+  .toko { margin-left:auto; color:#8fa0c4; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:30vw; }
+
+  main { padding:14px; max-width:1240px; margin:0 auto; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; }
+  .row { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-start; }
+  .grow { flex:1 1 440px; min-width:0; }
+  h3 { margin:0 0 10px; font-size:17px; }
+  .mut { color:var(--mut); } .sm { font-size:12.5px; } .ok { color:var(--ok); } .bad-t { color:var(--bad); } .warn-t { color:var(--warn); }
+
+  input, select { padding:8px 10px; border:1px solid var(--line2); border-radius:8px; background:#fff; min-width:0; }
+  input:focus, select:focus { outline:2px solid #a9c8ff; border-color:var(--pri); }
+  input[type=checkbox], input[type=radio] { width:17px; height:17px; padding:0; accent-color:var(--pri); vertical-align:middle; }
+  input.salah { border-color:var(--bad); background:#fff1f0; }
+  .b { padding:8px 14px; border-radius:8px; border:1px solid var(--line2); background:#fff; cursor:pointer; white-space:nowrap; }
+  .b:hover { background:#f0f3f9; }
+  .b.sm { padding:4px 9px; font-size:13px; }
+  .b.pri { background:var(--pri); border-color:var(--pri); color:#fff; } .b.pri:hover { background:var(--pri-d); }
+  .b.bad { color:var(--bad); border-color:#efc3c0; } .b.bad:hover { background:#fff1f0; }
+  .b.danger { background:var(--bad); border-color:var(--bad); color:#fff; } .b.danger:hover { background:#a31f1f; }
+  .b:disabled { opacity:.5; cursor:not-allowed; }
+  a.b { text-decoration:none; display:inline-block; }
+
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  th { font-size:12px; text-transform:uppercase; color:var(--mut); letter-spacing:.03em; background:#fff; position:sticky; top:0; z-index:1; }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; }
+  tr.sel td { background:var(--sel); }
+  td.kosong { text-align:center; color:var(--mut); padding:26px 8px; }
+  .scroll { max-height:calc(100vh - 250px); min-height:120px; overflow:auto; border:1px solid var(--line); border-radius:8px; }
+  .scroll th { top:0; box-shadow:0 1px 0 var(--line); }
+
+  .toolbar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; align-items:center; }
+  .toolbar input[type=search], .toolbar input.cari { flex:1 1 220px; }
+  .selbar { display:flex; gap:10px; align-items:center; background:var(--sel); border:1px solid #bcd3fb; border-radius:8px; padding:7px 10px; margin-bottom:10px; flex-wrap:wrap; }
+  .foot { display:flex; justify-content:space-between; align-items:center; gap:10px; padding-top:10px; color:var(--mut); font-size:13px; }
+
+  .big { font-size:30px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.15; }
+  .hasil { max-height:340px; overflow:auto; border:1px solid var(--line); border-radius:8px; margin-top:8px; }
+  .hasil div { padding:9px 10px; display:flex; justify-content:space-between; gap:10px; cursor:pointer; border-bottom:1px solid var(--line); }
+  .hasil div:last-child { border-bottom:0; }
+  .hasil div:hover, .hasil div.sel { background:var(--sel); }
+
+  .cart input { text-align:right; padding:6px 8px; }
+  .cart .inp-h { width:104px; } .cart .inp-q { width:62px; } .cart .inp-d { width:92px; }
+  .cart tr.ubah td.nm { box-shadow:inset 3px 0 0 var(--warn); }
+  .tag { display:inline-block; font-size:11.5px; padding:1px 7px; border-radius:99px; background:#fff4e0; color:var(--warn); border:1px solid #f3d9a8; }
+  .tag.merah { background:#fff1f0; color:var(--bad); border-color:#efc3c0; }
+  .total-box { margin-top:12px; border-top:2px solid var(--line); padding-top:10px; }
+  .total-box .r { display:flex; justify-content:space-between; align-items:center; padding:3px 0; }
+  .total-box .r input { width:130px; text-align:right; }
+
+  .toast { position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:#1b2333; color:#fff; padding:10px 18px; border-radius:9px; z-index:80; max-width:90vw; box-shadow:0 6px 20px rgba(0,0,0,.25); }
+  .toast.err { background:var(--bad); }
+  .modal { position:fixed; inset:0; background:rgba(12,18,32,.5); display:flex; align-items:flex-start; justify-content:center; z-index:60; padding:5vh 14px; overflow:auto; }
+  .modal > .card { width:min(470px,100%); box-shadow:0 18px 50px rgba(0,0,0,.3); }
+  .modal > .card.lebar { width:min(960px,100%); }
+  .aksi { display:flex; justify-content:flex-end; gap:8px; margin-top:16px; flex-wrap:wrap; }
+  label.f { display:block; font-size:13px; color:var(--mut); margin:11px 0 3px; }
+  .pay input { width:100%; text-align:right; font-size:19px; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin-bottom:14px; }
+  .kpi .l { font-size:12px; color:var(--mut); text-transform:uppercase; letter-spacing:.03em; } .kpi .v { font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .alert { padding:9px 12px; border-radius:8px; margin:10px 0; font-size:14px; border:1px solid; }
+  .alert.warn { background:#fff8e8; border-color:#f3d9a8; color:#7a4a05; }
+  .alert.bad { background:#fff1f0; border-color:#efc3c0; color:#8f1d1d; }
+  .alert.ok { background:#edf9f0; border-color:#b8e2c3; color:#14532d; }
+  .alert.info { background:#eef4ff; border-color:#c3d6fb; color:#1e3a8a; }
+
+  .dz { border:2px dashed var(--line2); border-radius:12px; padding:32px 16px; text-align:center; background:#fafbfd; }
+  .dz.over { border-color:var(--pri); background:var(--sel); }
+  .prev { overflow:auto; border:1px solid var(--line); border-radius:8px; max-height:340px; }
+  .prev th { text-transform:none; font-size:13px; color:var(--ink); vertical-align:top; padding:8px; min-width:130px; }
+  .prev th select { width:100%; margin-top:4px; font-weight:600; }
+  .prev td { font-size:13.5px; max-width:340px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .stat { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:10px; margin:10px 0; }
+  .stat div { border:1px solid var(--line); border-radius:10px; padding:10px; text-align:center; } .stat b { display:block; font-size:24px; }
+  .spin { display:inline-block; width:16px; height:16px; border:2px solid var(--line2); border-top-color:var(--pri); border-radius:50%; animation:putar .8s linear infinite; vertical-align:-3px; margin-right:6px; }
+  @keyframes putar { to { transform:rotate(360deg); } }
+
+  #struk { display:none; }
+  @media (max-width:700px) { .toko { display:none; } .brand { margin-right:6px; } .big { font-size:26px; } }
+  @media print {
+    body > *:not(#struk) { display:none !important; }
+    #struk { display:block; width:72mm; font:12px/1.35 monospace; color:#000; }
+    #struk .c { text-align:center; } #struk .r { display:flex; justify-content:space-between; gap:8px; }
+    #struk hr { border:0; border-top:1px dashed #000; }
+    @page { margin:2mm; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 46a10 10 0 0 1-1-19.9A14.5 14.5 0 0 1 45 29a8.5 8.5 0 0 1 1 17z" fill="#5aa2ff"/></svg>
+    <span>nationcloud<b>POS</b></span>
+  </div>
+  <nav id="nav">
+    <button data-t="kasir">Kasir</button>
+    <button data-t="barang">Barang</button>
+    <button data-t="jual">Penjualan</button>
+    <button data-t="lap">Laporan</button>
+    <button data-t="set">Pengaturan</button>
+  </nav>
+  <button id="updbadge" class="updbadge" hidden title="Ada versi baru, klik untuk melihat"></button>
+  <div class="toko" id="tokoNama"></div>
+</header>
+<main id="main"></main>
+<div id="struk"></div>
+<noscript><p style="padding:20px">nationcloudPOS membutuhkan JavaScript aktif di browser.</p></noscript>
+<script src="/angka.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

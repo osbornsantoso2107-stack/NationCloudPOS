@@ -1,0 +1,8 @@
+# data toko JANGAN pernah masuk GitHub
+data/
+update/
+node_modules/
+*.zip
+*.db
+*.db-wal
+*.db-shm
