@@ -1,8 +1,8 @@
 {
-  "versi": "1.5.0",
+  "versi": "1.5.1",
   "repo": "osbornsantoso2107-stack/nationcloudpos",
   "cabang": "main",
   "catatan": [
-    "Update program langsung dari dalam program (Pengaturan > Update program)."
+    "Daftar Barang tidak lagi menampilkan kolom HPP (modal). HPP tetap tersimpan dan bisa dilihat/diubah lewat tombol Ubah."
   ]
 }

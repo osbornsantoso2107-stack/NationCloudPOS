@@ -271,16 +271,16 @@ async function viewBarang() {
     <div class="toolbar"><input id="bq" class="cari" type="search" placeholder="Cari kode / nama barang…" aria-label="Cari barang">
       <button class="b" id="impor">⬆ Impor PDF / Excel</button><button class="b pri" id="baru">+ Barang baru</button></div>
     <div class="selbar" id="selbar" hidden><b id="selinfo"></b><button class="b bad sm" id="hapusSel">Hapus terpilih</button><button class="b sm" id="batalSel">Batal pilih</button></div>
-    <div class="scroll"><table><thead><tr><th style="width:34px"><input type="checkbox" id="all" aria-label="Pilih semua"></th><th>Kode</th><th>Nama</th><th class="n">Harga</th><th class="n">HPP</th><th class="n">Stok</th><th></th></tr></thead><tbody id="bt"></tbody></table></div>
+    <div class="scroll"><table><thead><tr><th style="width:34px"><input type="checkbox" id="all" aria-label="Pilih semua"></th><th>Kode</th><th>Nama</th><th class="n">Harga</th><th class="n">Stok</th><th></th></tr></thead><tbody id="bt"></tbody></table></div>
     <div class="foot"><span id="cnt"></span><button class="b sm" id="more" hidden>Tampilkan 200 lagi</button></div></div>`;
   let rows = [], tampil = 200; const dipilih = new Set();
   const load = guard(async () => { rows = await api('/items?q=' + encodeURIComponent($('#bq').value)); for (const k of [...dipilih]) if (!rows.some((r) => r.kode === k)) dipilih.delete(k); gambar(); });
   function gambar() {
     $('#bt').innerHTML = rows.slice(0, tampil).map((i) => `<tr data-kode="${esc(i.kode)}" class="${dipilih.has(i.kode) ? 'sel' : ''}" style="${i.aktif ? '' : 'opacity:.55'}">
       <td><input type="checkbox" class="cb" ${dipilih.has(i.kode) ? 'checked' : ''} aria-label="Pilih ${esc(i.nama)}"></td><td>${esc(i.kode)}</td><td>${esc(i.nama)}${i.aktif ? '' : ' <span class="tag">nonaktif</span>'}</td>
-      <td class="n">${fmt(i.harga)}</td><td class="n mut">${fmt(i.hpp)}</td><td class="n ${i.stok <= 0 ? 'mut' : ''}">${i.stok}</td>
+      <td class="n">${fmt(i.harga)}</td><td class="n ${i.stok <= 0 ? 'mut' : ''}">${i.stok}</td>
       <td style="white-space:nowrap"><button class="b sm" data-e>Ubah</button> <button class="b sm" data-dup title="Buat varian dari barang ini">Duplikat</button> <button class="b sm" data-s>Stok</button> <button class="b sm bad" data-h>Hapus</button></td></tr>`).join('')
-      || '<tr><td colspan="7" class="kosong">Belum ada barang. Klik <b>Impor PDF / Excel</b> atau <b>+ Barang baru</b>.</td></tr>';
+      || '<tr><td colspan="6" class="kosong">Belum ada barang. Klik <b>Impor PDF / Excel</b> atau <b>+ Barang baru</b>.</td></tr>';
     $('#cnt').textContent = `${fmt(rows.length)} barang` + (rows.length > tampil ? ` · tampil ${fmt(tampil)}` : '');
     $('#more').hidden = rows.length <= tampil; $('#selbar').hidden = !dipilih.size; $('#selinfo').textContent = `${fmt(dipilih.size)} barang dipilih`;
     const all = $('#all'); all.checked = rows.length > 0 && dipilih.size >= rows.length && rows.every((r) => dipilih.has(r.kode)); all.indeterminate = dipilih.size > 0 && !all.checked;
