@@ -70,7 +70,7 @@ function bacaPohon(dir, pre = '', out = {}) {
   const rusak = susunZip({ 'server.js': 'ini bukan javascript {{{' });
   zipBuf = rusak; const sebelum = fs.readFileSync(path.join(prog, 'server.js'));
   await assert.rejects(() => update.pasang(ctx()), /gagal dijalankan/);
-  assert.deepEqual(fs.readFileSync(path.join(prog, 'server.js')), sebelum, 'server.js lama tidak berubah'); assert.equal(fs.existsSync(path.join(prog, 'fitur-baru.txt')), false); assert.equal(fs.existsSync(path.join(prog, 'update', 'baru')), false, 'folder sementara dibersihkan');
+  assert.deepEqual(fs.readFileSync(path.join(prog, 'server.js')), sebelum, 'server.js lama tidak berubah'); assert.equal(fs.existsSync(path.join(prog, 'fitur-baru.txt')), false); assert.deepEqual(fs.readdirSync(path.join(prog, 'update')).filter((f) => /^(baru|uji)/.test(f)), [], 'folder sementara dibersihkan');
 
   // 4. zip berisi jalur berbahaya
   zipBuf = buatZip({ 'r-main/server.js': 'x', 'r-main/../../jahat.txt': 'x', 'r-main/versi.json': versiJson(), 'r-main/public/index.html': '', 'r-main/public/app.js': '' });
@@ -85,7 +85,7 @@ function bacaPohon(dir, pre = '', out = {}) {
   assert.equal(JSON.parse(fs.readFileSync(path.join(prog, 'versi.json'), 'utf8')).versi, '99.0.0'); assert.equal(fs.readFileSync(path.join(prog, 'fitur-baru.txt'), 'utf8'), 'halo');
   assert.deepEqual(fs.readFileSync(dbFile), dataSblm, 'data toko tidak tersentuh'); assert.ok(fs.existsSync(h.backup), 'backup dibuat sebelum memasang');
   assert.ok(ctx.catat.some(([a]) => a === 'UPDATE')); assert.deepEqual(update.adaSebelumnya(prog), { dari: versiLama, ke: '99.0.0' });
-  assert.equal(fs.existsSync(path.join(prog, 'update', 'baru')), false);
+  assert.deepEqual(fs.readdirSync(path.join(prog, 'update')).filter((f) => /^(baru|uji)/.test(f)), []);
   await assert.rejects(() => update.pasang(ctx({ versi: '99.0.0' })), /sudah versi terbaru/);
 
   // 7. kembalikan

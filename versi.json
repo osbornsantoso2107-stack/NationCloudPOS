@@ -1,8 +1,8 @@
 {
-  "versi": "1.5.1",
+  "versi": "1.5.2",
   "repo": "osbornsantoso2107-stack/nationcloudpos",
   "cabang": "main",
   "catatan": [
-    "Daftar Barang tidak lagi menampilkan kolom HPP (modal). HPP tetap tersimpan dan bisa dilihat/diubah lewat tombol Ubah."
+    "Perbaikan: pemasangan update di Windows tidak lagi gagal karena file sementara; pesan kesalahan update sekarang lebih jelas."
   ]
 }

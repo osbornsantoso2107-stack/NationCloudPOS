@@ -7,6 +7,8 @@ const { spawn } = require('node:child_process');
 const { readZip } = require('./excel.js');
 
 class UpdateError extends Error {}
+// Windows menahan file/folder yang masih dipakai proses lain (EBUSY/EPERM): coba lagi, dan jangan gagalkan update hanya karena sisa sementara.
+function hapusSabar(p) { try { fs.rmSync(p, { recursive: true, force: true, maxRetries: 15, retryDelay: 200 }); return true; } catch { return false; } }
 const RAW = () => process.env.POS_UPDATE_RAW || 'https://raw.githubusercontent.com';
 const ZIPBASE = () => process.env.POS_UPDATE_ZIP || 'https://github.com';
 const REPO_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
@@ -58,9 +60,10 @@ const lewatiProgram = (rel) => /^(data|update)(\/|$)/.test(rel) || rel.startsWit
 
 async function cobaJalan(dir, dbSalinan, versiHarus) { // jalankan versi baru sebentar di port acak: harus menjawab dengan versi yang benar
   const port = 20000 + Math.floor(Math.random() * 40000);
-  const anak = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', 'server.js'], { cwd: dir, windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'], env: { ...process.env, POS_PORT: String(port), POS_HOST: '127.0.0.1', POS_DB: dbSalinan } });
+  const anak = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', 'server.js'], { cwd: dir, windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'], env: { ...process.env, POS_PORT: String(port), POS_HOST: '127.0.0.1', POS_DB: dbSalinan, POS_NO_RESTART: '1' } });
   let err = ''; anak.stderr.on('data', (d) => { err += d; });
-  let mati = false; anak.on('exit', () => { mati = true; });
+  let mati = false; const tamat = new Promise((r) => anak.on('exit', () => { mati = true; r(); }));
+  anak.on('error', (e) => { err += String(e.message); mati = true; });
   try {
     for (let i = 0; i < 40 && !mati; i++) {
       await new Promise((r) => setTimeout(r, 250));
@@ -70,10 +73,20 @@ async function cobaJalan(dir, dbSalinan, versiHarus) { // jalankan versi baru se
       } catch (e) { if (e instanceof UpdateError) throw e; }
     }
     throw new UpdateError('Versi baru gagal dijalankan pada uji coba, jadi tidak dipasang. ' + (err.trim().split('\n').slice(-2).join(' ') || ''));
-  } finally { try { anak.kill(); } catch { /* sudah mati */ } }
+  } finally {
+    try { anak.kill(); } catch { /* sudah mati */ }
+    await Promise.race([tamat, new Promise((r) => setTimeout(r, 5000))]); // Windows: file baru boleh dihapus setelah proses benar-benar berhenti
+  }
 }
 
 async function pasang(ctx) { // ctx: { dir, repo, cabang, versi, salinDb(file), backup(), log(aksi, detail) }
+  try { return await pasangInti(ctx); }
+  catch (e) {
+    if (e instanceof UpdateError) throw e;
+    throw new UpdateError(`Update gagal (${e.code || e.name}): ${e.message}. Program lama tetap berjalan. Tunjukkan pesan ini ke Claude.`);
+  }
+}
+async function pasangInti(ctx) {
   const { dir, repo, cabang } = ctx;
   const info = await cek(ctx, true);
   if (!info.ada) throw new UpdateError('Program sudah versi terbaru.');
@@ -81,8 +94,11 @@ async function pasang(ctx) { // ctx: { dir, repo, cabang, versi, salinDb(file), 
   const semua = zip.names();
   const top = semua[0] ? semua[0].split('/')[0] + '/' : '';
   if (!top || !semua.every((n) => n.startsWith(top))) throw new UpdateError('Isi zip dari GitHub tidak dikenali.');
-  const stg = path.join(dir, 'update', 'baru');
-  fs.rmSync(stg, { recursive: true, force: true }); fs.mkdirSync(stg, { recursive: true });
+  const induk = path.join(dir, 'update'); fs.mkdirSync(induk, { recursive: true });
+  for (const f of fs.readdirSync(induk)) if (/^baru/.test(f)) hapusSabar(path.join(induk, f)); // sisa percobaan lama
+  const stg = path.join(induk, 'baru-' + Date.now());
+  fs.mkdirSync(stg, { recursive: true });
+  const uji = path.join(induk, 'uji-' + Date.now()); fs.mkdirSync(uji, { recursive: true }); // data uji di luar berkas program
   try {
     for (const n of semua) {
       const rel = n.slice(top.length);
@@ -95,12 +111,11 @@ async function pasang(ctx) { // ctx: { dir, repo, cabang, versi, salinDb(file), 
     let baru; try { baru = JSON.parse(fs.readFileSync(path.join(stg, 'versi.json'), 'utf8')); } catch { throw new UpdateError('versi.json di dalam zip rusak.'); }
     if (baru.versi !== info.versi_baru) throw new UpdateError('Versi di dalam zip berbeda dengan yang diumumkan. Coba lagi beberapa menit lagi.');
     // uji coba pada SALINAN data asli (memastikan database toko Anda tetap terbuka oleh versi baru)
-    const salinan = path.join(stg, '_uji.db'); ctx.salinDb(salinan);
+    const salinan = path.join(uji, 'uji.db'); ctx.salinDb(salinan);
     await cobaJalan(stg, salinan, info.versi_baru);
-    for (const f of fs.readdirSync(stg)) if (f.startsWith('_uji.db') || f === 'backup') fs.rmSync(path.join(stg, f), { recursive: true, force: true });
     const cad = ctx.backup(); // cadangan data sebelum apa pun diganti
     // simpan berkas lama untuk "Kembalikan versi sebelumnya"
-    const sb = path.join(dir, 'update', 'sebelumnya'); fs.rmSync(sb, { recursive: true, force: true }); fs.mkdirSync(sb, { recursive: true });
+    const sb = path.join(dir, 'update', 'sebelumnya'); hapusSabar(sb); fs.mkdirSync(sb, { recursive: true });
     const baruSaja = [], ada = [];
     salinPohon(stg, dir, lewatiProgram, { prefix: '', fn: (rel, a, b) => {
       if (fs.existsSync(b)) { const s = path.join(sb, 'berkas', rel); fs.mkdirSync(path.dirname(s), { recursive: true }); fs.copyFileSync(b, s); ada.push(rel); } else baruSaja.push(rel);
@@ -109,7 +124,7 @@ async function pasang(ctx) { // ctx: { dir, repo, cabang, versi, salinDb(file), 
     salinPohon(stg, dir, lewatiProgram, { prefix: '', fn: (rel, a, b) => { fs.mkdirSync(path.dirname(b), { recursive: true }); fs.copyFileSync(a, b); } });
     ctx.log('UPDATE', { dari: ctx.versi, ke: info.versi_baru, repo, backup: cad && cad.file });
     return { dari: ctx.versi, ke: info.versi_baru, catatan: info.catatan, backup: cad && cad.file };
-  } finally { fs.rmSync(stg, { recursive: true, force: true }); }
+  } finally { hapusSabar(stg); hapusSabar(uji); }
 }
 
 function adaSebelumnya(dir) {
